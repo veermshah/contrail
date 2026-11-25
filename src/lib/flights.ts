@@ -49,7 +49,7 @@ export async function addFlight(c: FlightCandidate) {
       x.number === c.number &&
       x.dateLocal === c.dateLocal &&
       x.departure.airport.iata === c.departure.airport.iata &&
-      (x.departure.scheduledUtc === c.departure.scheduledUtc || !x.departure.scheduledUtc)
+      (x.departure.scheduledUtc === c.departure.scheduledUtc || !x.departure.scheduledUtc || !c.departure.scheduledUtc)
   );
   if (dup && !dup.departure.scheduledUtc && c.departure.scheduledUtc) {
     const upgraded: Flight = {
