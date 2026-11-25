@@ -1,31 +1,25 @@
 import { NativeTabs } from 'expo-router/native-tabs';
-import { useColorScheme } from 'react-native';
 
-import { Colors } from '@/constants/theme';
+import { C } from '@/lib/theme';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
-
   return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
+    <NativeTabs backgroundColor={C.bg} tintColor={C.accent} labelStyle={{ selected: { color: C.accent } }}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
+        <NativeTabs.Trigger.Label>Flights</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="airplane" md="flight" />
       </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
+      <NativeTabs.Trigger name="live">
+        <NativeTabs.Trigger.Label>Overhead</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="dot.radiowaves.up.forward" md="radar" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="passport">
+        <NativeTabs.Trigger.Label>Passport</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="globe.americas.fill" md="public" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="settings">
+        <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="gearshape.fill" md="settings" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );
