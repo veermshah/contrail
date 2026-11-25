@@ -103,6 +103,8 @@ function describeChanges(prev: Flight, next: Flight): string[] {
 }
 
 function mergeAirport(prev: Airport, next: Airport): Airport {
+  const same = (prev.iata && prev.iata === next.iata) || (prev.icao && prev.icao === next.icao);
+  if (!same && (next.iata || next.icao)) return next;
   const defined = Object.fromEntries(Object.entries(next).filter(([, v]) => v != null && v !== ''));
   return { ...prev, ...defined } as Airport;
 }
