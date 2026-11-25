@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, T } from '@/components/ui';
 import { testKey } from '@/lib/api/aerodatabox';
 import { isPast } from '@/lib/flights';
+import { getCalendarUrl, importFromCalendar, setCalendarUrl } from '@/lib/ics';
 import { cancelAllReminders, ensurePermission, scheduleReminders } from '@/lib/notifications';
 import { getApiKey, getPrefs, setApiKey, setPrefs, type Prefs } from '@/lib/settings';
 import { getFlights, replaceAll } from '@/lib/store';
@@ -16,6 +17,28 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [prefs, setP] = useState<Prefs>({ units: 'mi', alerts: true });
+  const [cal, setCal] = useState('');
+  const [calSaved, setCalSaved] = useState(false);
+  const [calMsg, setCalMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    getCalendarUrl().then((u) => setCalSaved(!!u));
+  }, []);
+
+  const syncCalendar = async (url?: string) => {
+    setCalMsg('Looking for flights…');
+    try {
+      const r = await importFromCalendar(url);
+      if (url) {
+        await setCalendarUrl(url);
+        setCalSaved(true);
+        setCal('');
+      }
+      setCalMsg(r.found ? `Found ${r.found} upcoming flight${r.found === 1 ? '' : 's'}, added ${r.added} new.` : 'No upcoming flights found in that calendar.');
+    } catch (e: any) {
+      setCalMsg(`Couldn't read that calendar: ${e?.message ?? 'unknown error'}`);
+    }
+  };
 
   useEffect(() => {
     getApiKey().then((k) => setSaved(!!k));
@@ -97,6 +120,40 @@ export default function Settings() {
         </View>
         <Button title="Get a free key" kind="ghost" onPress={() => Linking.openURL('https://rapidapi.com/aedbx-aedbx/api/aerodatabox/pricing')} />
         {msg && <T variant="sub">{msg}</T>}
+      </Card>
+
+      <Card style={{ gap: 10 }}>
+        <T variant="label">Gmail & calendar import</T>
+        <T variant="sub">
+          Gmail adds airline confirmations to Google Calendar. Paste your calendar&apos;s private iCal link and Contrail imports those flights every time it opens. In Google Calendar on the web: Settings → your calendar → Integrate calendar → Secret address in iCal format.
+        </T>
+        <T style={{ color: calSaved ? C.green : C.sub, fontWeight: '700' }}>{calSaved ? 'Calendar connected' : 'No calendar connected'}</T>
+        <TextInput
+          value={cal}
+          onChangeText={setCal}
+          placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"
+          placeholderTextColor={C.dim}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          style={st.input}
+        />
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Button title="Connect" onPress={() => syncCalendar(cal.trim())} disabled={!/^(https|webcal):\/\//i.test(cal.trim())} style={{ flex: 1 }} />
+          {calSaved && <Button title="Sync now" kind="ghost" onPress={() => syncCalendar()} style={{ flex: 1 }} />}
+          {calSaved && (
+            <Button
+              title="Disconnect"
+              kind="ghost"
+              onPress={async () => {
+                await setCalendarUrl(null);
+                setCalSaved(false);
+                setCalMsg(null);
+              }}
+            />
+          )}
+        </View>
+        {calMsg && <T variant="sub">{calMsg}</T>}
       </Card>
 
       <Card style={{ gap: 14 }}>

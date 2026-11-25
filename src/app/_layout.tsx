@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
 import { registerBackgroundRefresh } from '@/lib/background';
+import { importFromCalendar } from '@/lib/ics';
 import { ensurePermission } from '@/lib/notifications';
 import { loadFlights } from '@/lib/store';
 import { C } from '@/lib/theme';
@@ -19,7 +20,10 @@ const theme = {
 
 export default function RootLayout() {
   useEffect(() => {
-    loadFlights().finally(() => SplashScreen.hideAsync());
+    loadFlights()
+      .finally(() => SplashScreen.hideAsync())
+      .then(() => importFromCalendar())
+      .catch(() => {});
     registerBackgroundRefresh().catch(() => {});
     ensurePermission().catch(() => {});
     if (Platform.OS === 'web') return;
