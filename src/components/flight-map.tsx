@@ -20,7 +20,7 @@ function splitAtPlane(path: LatLon[], plane?: LatLon) {
   return { flown: [...path.slice(0, best + 1), plane], rest: [plane, ...path.slice(best + 1)] };
 }
 
-export default function FlightMap({ routes, planes = [], center, style, onPlanePress }: FlightMapProps) {
+export default function FlightMap({ routes, planes = [], center, style, onPlanePress, inset }: FlightMapProps) {
   const paths = useMemo(() => routes.map((r) => ({ r, path: greatCircle(r.from, r.to) })), [routes]);
   const region = useMemo(() => {
     if (center)
@@ -43,6 +43,7 @@ export default function FlightMap({ routes, planes = [], center, style, onPlaneP
     <MapView
       style={[StyleSheet.absoluteFill, style]}
       initialRegion={region}
+      mapPadding={{ top: inset?.top ?? 0, bottom: inset?.bottom ?? 0, left: 0, right: 0 }}
       userInterfaceStyle="dark"
       mapType="mutedStandard"
       showsPointsOfInterests={false}

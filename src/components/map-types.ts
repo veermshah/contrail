@@ -16,5 +16,7 @@ export type FlightMapProps = {
   planes?: MapPlane[];
   center?: { latitude: number; longitude: number; radiusDeg: number };
   style?: StyleProp<ViewStyle>;
+  /** Space covered by overlaid UI; content is fitted below/above it. */
+  inset?: { top?: number; bottom?: number };
   onPlanePress?: (id: string) => void;
 };

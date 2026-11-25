@@ -8,9 +8,10 @@ import { C } from '@/lib/theme';
 import type { FlightMapProps } from './map-types';
 
 
-export default function FlightMap({ routes, planes = [], center, style }: FlightMapProps) {
+export default function FlightMap({ routes, planes = [], center, style, inset }: FlightMapProps) {
   const [size, setSize] = useState({ w: 400, h: 300 });
   const W = size.w, H = size.h;
+  const top = inset?.top ?? 0, fitH = Math.max(H - top - (inset?.bottom ?? 0), 40);
   const paths = useMemo(() => routes.map((r) => ({ r, path: unwrapPath(greatCircle(r.from, r.to)) })), [routes]);
   const reg = useMemo(() => {
     if (center) return { latitude: center.latitude, longitude: center.longitude, latitudeDelta: center.radiusDeg * 2, longitudeDelta: center.radiusDeg * 2 };
@@ -18,9 +19,9 @@ export default function FlightMap({ routes, planes = [], center, style }: Flight
     planes.forEach((p) => pts.push({ latitude: p.lat, longitude: p.lon }));
     return pts.length ? regionFor(pts) : { latitude: 30, longitude: -40, latitudeDelta: 100, longitudeDelta: 160 };
   }, [paths, planes, center]);
-  const span = Math.max(reg.longitudeDelta, (reg.latitudeDelta * W) / H);
+  const span = Math.max(reg.longitudeDelta, (reg.latitudeDelta * W) / fitH);
   const x = (lon: number) => ((lon - reg.longitude) / span + 0.5) * W;
-  const y = (lat: number) => (0.5 - ((lat - reg.latitude) * W) / H / span) * H;
+  const y = (lat: number) => top + fitH / 2 - ((lat - reg.latitude) * W) / span;
   const step = span > 60 ? 15 : span > 20 ? 5 : 1;
   const grid: number[] = [];
   for (let v = -180; v <= 180; v += step) grid.push(v);
