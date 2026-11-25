@@ -2,7 +2,7 @@ import type { Airport } from '../types';
 import AIRPORTS from '../airports.json';
 import { routeByCallsign } from './adsbdb';
 import type { BoardRow } from './aerodatabox';
-import { getJson } from './http';
+import { getJson, HttpError } from './http';
 
 type Row = [icao: string, name: string, city: string, lat: number, lon: number, country: string];
 const BY_IATA = AIRPORTS as unknown as Record<string, Row>;
@@ -26,7 +26,10 @@ export async function recentBoard(code: string, direction: 'Departure' | 'Arriva
   const kind = direction === 'Departure' ? 'departure' : 'arrival';
   const data = await getJson<OsFlight[]>(
     `https://opensky-network.org/api/flights/${kind}?airport=${ap.icao}&begin=${end - 7200}&end=${end}`
-  );
+  ).catch((e) => {
+    if (e instanceof HttpError && e.status === 404) return [] as OsFlight[];
+    throw e;
+  });
   const flights = (Array.isArray(data) ? data : [])
     .filter((f) => f.callsign?.trim())
     .sort((a, b) => (direction === 'Departure' ? b.firstSeen - a.firstSeen : b.lastSeen - a.lastSeen))
