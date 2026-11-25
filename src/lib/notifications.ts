@@ -36,6 +36,11 @@ export async function cancelReminders(flightId: string) {
   await Promise.all(reminderIds(flightId).map((i) => Notifications.cancelScheduledNotificationAsync(i).catch(() => {})));
 }
 
+export async function cancelAllReminders() {
+  if (Platform.OS === 'web') return;
+  await Notifications.cancelAllScheduledNotificationsAsync();
+}
+
 export async function scheduleReminders(f: Flight) {
   if (Platform.OS === 'web') return;
   await cancelReminders(f.id);

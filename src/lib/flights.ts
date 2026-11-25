@@ -101,7 +101,7 @@ export async function refreshFlight(f: Flight, { notify = true } = {}): Promise<
   if (notify && changes.length && (await getPrefs()).alerts) {
     await notifyNow(`${next.number} ${next.departure.airport.iata ?? ''} → ${next.arrival.airport.iata ?? ''}`, changes.join('\n'), next.id).catch(() => {});
   }
-  if (bestTime(f.departure) !== bestTime(next.departure)) await scheduleReminders(next).catch(() => {});
+  if (bestTime(f.departure) !== bestTime(next.departure) && (await getPrefs()).alerts) await scheduleReminders(next).catch(() => {});
   return next;
 }
 

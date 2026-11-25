@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, T } from '@/components/ui';
 import { testKey } from '@/lib/api/aerodatabox';
-import { ensurePermission } from '@/lib/notifications';
+import { isPast } from '@/lib/flights';
+import { cancelAllReminders, ensurePermission, scheduleReminders } from '@/lib/notifications';
 import { getApiKey, getPrefs, setApiKey, setPrefs, type Prefs } from '@/lib/settings';
 import { getFlights, replaceAll } from '@/lib/store';
 import { C, R } from '@/lib/theme';
@@ -37,6 +38,8 @@ export default function Settings() {
   const update = async (p: Partial<Prefs>) => {
     if (p.alerts) await ensurePermission();
     setP(await setPrefs(p));
+    if (p.alerts === false) await cancelAllReminders().catch(() => {});
+    if (p.alerts) for (const f of getFlights().filter((x) => !isPast(x))) await scheduleReminders(f).catch(() => {});
   };
 
   const exportData = () => Share.share({ message: JSON.stringify(getFlights(), null, 2) });
