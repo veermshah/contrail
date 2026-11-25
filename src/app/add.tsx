@@ -26,7 +26,8 @@ export default function AddFlight() {
   const search = async () => {
     const n = normalizeFlightNumber(number);
     if (!/^[A-Z0-9]{2,3}\d{1,4}[A-Z]?$/.test(n)) return setError('Enter a flight number like AA100 or UA 1.');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return setError('Date must be YYYY-MM-DD.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date)
+      return setError('Enter a real date as YYYY-MM-DD.');
     setError(null);
     setLoading(true);
     try {
