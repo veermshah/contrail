@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { addFlight, searchFlights } from './flights';
+import { addFlight, searchFlights, type FlightCandidate } from './flights';
 import { getFlights } from './store';
 
 const URL_KEY = 'contrail:calendar-url';
 const SEEN_KEY = 'contrail:calendar-seen';
 
-export type CalendarFlight = { uid: string; number: string; dateLocal: string; summary: string };
+export type CalendarFlight = { uid: string; number: string; dateLocal: string; summary: string; startMs?: number };
 
 export const getCalendarUrl = () => AsyncStorage.getItem(URL_KEY);
 export async function setCalendarUrl(url: string | null) {
@@ -37,6 +37,11 @@ export function findFlightNumber(text: string): string | null {
   return null;
 }
 
+function startOf(dtstart: string): number | undefined {
+  const m = dtstart.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/);
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : undefined;
+}
+
 function dateOf(dtstart: string): string | null {
   const m = dtstart.match(/(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z)?)?/);
   if (!m) return null;
@@ -54,7 +59,8 @@ export function parseFlights(ics: string): CalendarFlight[] {
     const summary = unescape(field('SUMMARY'));
     const number = findFlightNumber(`${summary} ${unescape(field('DESCRIPTION'))}`);
     const dateLocal = dateOf(field('DTSTART'));
-    if (number && dateLocal) out.push({ uid: field('UID') || `${number}-${dateLocal}`, number, dateLocal, summary });
+    const startMs = startOf(field('DTSTART'));
+    if (number && dateLocal) out.push({ uid: field('UID') || `${number}-${dateLocal}`, number, dateLocal, summary, startMs });
   }
   return out;
 }
@@ -71,6 +77,31 @@ async function fetchText(url: string) {
   }
 }
 
+const shiftDate = (d: string, days: number) => {
+  const t = new Date(`${d}T00:00:00Z`);
+  t.setUTCDate(t.getUTCDate() + days);
+  return t.toISOString().slice(0, 10);
+};
+
+/** Finds the leg whose scheduled departure matches the event start; falls back to the first result when times are unknown. */
+async function findLeg(cf: CalendarFlight): Promise<FlightCandidate | null> {
+  const dates = cf.startMs ? [cf.dateLocal, shiftDate(cf.dateLocal, -1), shiftDate(cf.dateLocal, 1)] : [cf.dateLocal];
+  let fallback: FlightCandidate | null = null;
+  for (const d of dates) {
+    const results = await searchFlights(cf.number, d).catch(() => [] as FlightCandidate[]);
+    const timed = results.filter((r) => r.departure.scheduledUtc);
+    if (!cf.startMs || !timed.length) {
+      fallback ??= d === cf.dateLocal ? (results[0] ?? null) : null;
+      continue;
+    }
+    const best = timed
+      .map((r) => ({ r, diff: Math.abs(Date.parse(r.departure.scheduledUtc!) - cf.startMs!) }))
+      .sort((a, b) => a.diff - b.diff)[0];
+    if (best.diff <= 3 * 3600e3) return best.r;
+  }
+  return fallback;
+}
+
 /** Imports upcoming flights from the saved calendar feed. Returns the number of flights added. */
 export async function importFromCalendar(url?: string): Promise<{ found: number; added: number }> {
   const feed = url ?? (await getCalendarUrl());
@@ -82,15 +113,14 @@ export async function importFromCalendar(url?: string): Promise<{ found: number;
   const seen = new Set<string>(JSON.parse((await AsyncStorage.getItem(SEEN_KEY)) ?? '[]'));
   let added = 0;
   for (const cf of flights) {
-    if (seen.has(cf.uid)) continue;
-    const exists = getFlights().some((f) => f.dateLocal === cf.dateLocal && f.number.replace(/\s/g, '') === cf.number);
-    if (!exists) {
-      const [match] = await searchFlights(cf.number, cf.dateLocal).catch(() => []);
-      if (!match) continue;
-      await addFlight({ ...match, notes: `From calendar: ${cf.summary}` });
-      added++;
-    }
-    seen.add(cf.uid);
+    const key = `${cf.uid}|${cf.number}|${cf.dateLocal}|${cf.startMs ?? ''}`;
+    if (seen.has(key)) continue;
+    const match = await findLeg(cf);
+    if (!match) continue;
+    const before = getFlights().length;
+    await addFlight({ ...match, notes: `From calendar: ${cf.summary}` });
+    if (getFlights().length > before) added++;
+    seen.add(key);
   }
   await AsyncStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
   return { found: flights.length, added };
