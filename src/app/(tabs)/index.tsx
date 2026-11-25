@@ -78,7 +78,8 @@ export default function FlightsScreen() {
 
 function NextUp({ f }: { f: Flight }) {
   const [now] = useState(() => Date.now());
-  const mins = (when(f) - now) / 60000;
+  const dep = bestTime(f.departure);
+  const mins = dep ? (Date.parse(dep) - now) / 60000 : NaN;
   if (!Number.isFinite(mins) || mins < 0 || mins > 14 * 24 * 60) return null;
   return (
     <View style={st.hero}>
