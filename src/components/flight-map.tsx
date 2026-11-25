@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 
-import { greatCircle, regionFor, type LatLon } from '@/lib/geo';
+import { greatCircle, regionFor, splitAntimeridian, unwrapPath, type LatLon } from '@/lib/geo';
 import { C } from '@/lib/theme';
 
 import type { FlightMapProps } from './map-types';
@@ -25,9 +25,11 @@ export default function FlightMap({ routes, planes = [], center, style, onPlaneP
   const region = useMemo(() => {
     if (center)
       return { latitude: center.latitude, longitude: center.longitude, latitudeDelta: center.radiusDeg * 2, longitudeDelta: center.radiusDeg * 2 };
-    const pts = paths.flatMap((p) => p.path);
+    const pts = paths.flatMap((p) => unwrapPath(p.path));
     planes.forEach((p) => pts.push({ latitude: p.lat, longitude: p.lon }));
-    return pts.length ? regionFor(pts) : { latitude: 30, longitude: -40, latitudeDelta: 100, longitudeDelta: 160 };
+    if (!pts.length) return { latitude: 30, longitude: -40, latitudeDelta: 100, longitudeDelta: 160 };
+    const reg = regionFor(pts);
+    return { ...reg, longitude: ((reg.longitude + 540) % 360) - 180 };
   }, [paths, planes, center]);
 
   const single = routes.length === 1 ? planes[0] : undefined;
@@ -52,13 +54,18 @@ export default function FlightMap({ routes, planes = [], center, style, onPlaneP
         const { flown, rest } = splitAtPlane(path, single ? { latitude: single.lat, longitude: single.lon } : undefined);
         return (
           <View key={r.id}>
-            {flown.length > 1 && <Polyline coordinates={flown} strokeColor={C.accent} strokeWidth={4} />}
-            <Polyline
-              coordinates={rest}
-              strokeColor={r.highlight === false ? C.accent + '55' : single ? C.sub : C.accent}
-              strokeWidth={single ? 3 : 2}
-              lineDashPattern={single ? [6, 6] : undefined}
-            />
+            {splitAntimeridian(flown).map((seg, i) => (
+              <Polyline key={`f${i}`} coordinates={seg} strokeColor={C.accent} strokeWidth={4} />
+            ))}
+            {splitAntimeridian(rest).map((seg, i) => (
+              <Polyline
+                key={`r${i}`}
+                coordinates={seg}
+                strokeColor={r.highlight === false ? C.accent + '55' : single ? C.sub : C.accent}
+                strokeWidth={single ? 3 : 2}
+                lineDashPattern={single ? [6, 6] : undefined}
+              />
+            ))}
           </View>
         );
       })}

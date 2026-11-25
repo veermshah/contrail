@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 
-import { greatCircle, regionFor } from '@/lib/geo';
+import { greatCircle, regionFor, unwrapPath } from '@/lib/geo';
 import { C } from '@/lib/theme';
 
 import type { FlightMapProps } from './map-types';
@@ -10,7 +10,7 @@ import type { FlightMapProps } from './map-types';
 const W = 400, H = 300;
 
 export default function FlightMap({ routes, planes = [], center, style }: FlightMapProps) {
-  const paths = useMemo(() => routes.map((r) => ({ r, path: greatCircle(r.from, r.to) })), [routes]);
+  const paths = useMemo(() => routes.map((r) => ({ r, path: unwrapPath(greatCircle(r.from, r.to)) })), [routes]);
   const reg = useMemo(() => {
     if (center) return { latitude: center.latitude, longitude: center.longitude, latitudeDelta: center.radiusDeg * 2, longitudeDelta: center.radiusDeg * 2 };
     const pts = paths.flatMap((p) => p.path);
@@ -36,11 +36,11 @@ export default function FlightMap({ routes, planes = [], center, style }: Flight
         {paths.map(({ r, path }) => (
           <Polyline key={r.id} points={path.map((p) => `${x(p.longitude)},${y(p.latitude)}`).join(' ')} fill="none" stroke={C.accent} strokeWidth={2} />
         ))}
-        {routes.flatMap((r) => [r.from, r.to]).map((a, i) => (
+        {paths.flatMap(({ r, path }) => [{ ...r.from, longitude: path[0].longitude }, { ...r.to, longitude: path[path.length - 1].longitude }]).map((a, i) => (
           <Circle key={i} cx={x(a.longitude)} cy={y(a.latitude)} r={4} fill={C.bg} stroke={C.text} strokeWidth={2} />
         ))}
         {routes.length < 8 &&
-          routes.flatMap((r) => [r.from, r.to]).map((a, i) =>
+          paths.flatMap(({ r, path }) => [{ ...r.from, longitude: path[0].longitude }, { ...r.to, longitude: path[path.length - 1].longitude }]).map((a, i) =>
             a.code ? (
               <SvgText key={`t${i}`} x={x(a.longitude)} y={y(a.latitude) + 16} fill={C.text} fontSize={11} fontWeight="800" textAnchor="middle">
                 {a.code}

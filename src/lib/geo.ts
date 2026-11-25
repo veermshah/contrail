@@ -39,6 +39,29 @@ export function greatCircle(a: LatLon, b: LatLon, segments = 64): LatLon[] {
   return pts;
 }
 
+/** Shifts longitudes by ±360 so consecutive points never jump across the antimeridian. */
+export function unwrapPath(pts: LatLon[]): LatLon[] {
+  const out: LatLon[] = [];
+  for (const p of pts) {
+    const prev = out[out.length - 1];
+    let lon = p.longitude;
+    if (prev) while (lon - prev.longitude > 180) lon -= 360;
+    if (prev) while (lon - prev.longitude < -180) lon += 360;
+    out.push({ ...p, longitude: lon });
+  }
+  return out;
+}
+
+/** Splits a path into pieces that each stay within [-180, 180]. */
+export function splitAntimeridian(pts: LatLon[]): LatLon[][] {
+  const parts: LatLon[][] = [[]];
+  pts.forEach((p, i) => {
+    if (i && Math.abs(p.longitude - pts[i - 1].longitude) > 180) parts.push([]);
+    parts[parts.length - 1].push(p);
+  });
+  return parts.filter((s) => s.length > 1);
+}
+
 export function regionFor(points: LatLon[], padding = 1.4) {
   const lats = points.map((p) => p.latitude);
   const lons = points.map((p) => p.longitude);
