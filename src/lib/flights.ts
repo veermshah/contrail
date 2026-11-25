@@ -110,7 +110,15 @@ export async function refreshActive() {
   for (const f of active) await refreshFlight(f).catch(() => {});
 }
 
+function inLiveWindow(f: Flight, now = Date.now()) {
+  if (flightWindow(f).dep) return isActive(f, now);
+  const [y, m, d] = f.dateLocal.split('-').map(Number);
+  const start = new Date(y, m - 1, d).getTime();
+  return now >= start - 12 * 3600e3 && now <= start + 36 * 3600e3;
+}
+
 export async function livePosition(f: Flight): Promise<LivePosition | null> {
+  if (!inLiveWindow(f)) return null;
   if (f.callSign) {
     const byCs = await liveByCallsign(f.callSign);
     if (byCs) return byCs;
