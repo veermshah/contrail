@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -77,7 +77,11 @@ export default function FlightsScreen() {
 }
 
 function NextUp({ f }: { f: Flight }) {
-  const [now] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
   const dep = bestTime(f.departure);
   const mins = dep ? (Date.parse(dep) - now) / 60000 : NaN;
   if (!Number.isFinite(mins) || mins < 0 || mins > 14 * 24 * 60) return null;
