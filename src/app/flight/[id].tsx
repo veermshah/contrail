@@ -123,7 +123,7 @@ export default function FlightDetail() {
 
   const share = () => {
     const msg = `${f.number} ${dep.iata} → ${arr.iata}\n${sm.headline}\nDeparts ${fmtTime(sm.depTime, dep.timeZone)} ${fmtDate(sm.depTime, dep.timeZone)}${f.departure.gate ? ` · Gate ${f.departure.gate}` : ''}\nArrives ${fmtTime(sm.arrTime, arr.timeZone)}${live ? `\nNow at ${Math.round(live.altitudeFt ?? 0).toLocaleString()} ft, ${Math.round(live.groundSpeedKt ?? 0)} kt` : ''}`;
-    Share.share({ message: msg });
+    Share.share({ message: msg }).catch(() => {});
   };
 
   const del = () => {

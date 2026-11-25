@@ -42,7 +42,19 @@ export default function Settings() {
     if (p.alerts) for (const f of getFlights().filter((x) => !isPast(x))) await scheduleReminders(f).catch(() => {});
   };
 
-  const exportData = () => Share.share({ message: JSON.stringify(getFlights(), null, 2) });
+  const exportData = async () => {
+    const json = JSON.stringify(getFlights(), null, 2);
+    if (Platform.OS === 'web') {
+      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'contrail-flights.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+    await Share.share({ message: json }).catch(() => {});
+  };
 
   const clear = async () => {
     await cancelAllReminders().catch(() => {});
