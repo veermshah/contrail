@@ -26,7 +26,11 @@ export function summarize(f: Flight, now = Date.now()) {
   if (canceled) headline = 'This flight was canceled';
   else if (!dep) headline = statusLabel(f.status);
   else if (f.status === 'Arrived' || (arr && now > arr && isPast(f, now)))
-    headline = arr ? `Landed ${fmtDuration((now - arr) / 60000)} ago` : 'Landed';
+    headline = !arr
+      ? 'Landed'
+      : f.source === 'route' && f.status !== 'Arrived'
+        ? `Scheduled to land ${fmtDuration((now - arr) / 60000)} ago`
+        : `Landed ${fmtDuration((now - arr) / 60000)} ago`;
   else if (now < dep) headline = `Departs in ${fmtDuration((dep - now) / 60000)}`;
   else if (arr && now < arr) headline = `Lands in ${fmtDuration((arr - now) / 60000)}`;
   else headline = statusLabel(f.status);
