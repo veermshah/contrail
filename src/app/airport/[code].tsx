@@ -4,8 +4,10 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Vie
 
 import { Pill, T } from '@/components/ui';
 import { airportBoard, type BoardRow } from '@/lib/api/aerodatabox';
+import { recentBoard } from '@/lib/api/opensky';
 import { fmtTime } from '@/lib/format';
 import { statusLabel } from '@/lib/flights';
+import { getApiKey } from '@/lib/settings';
 import { getFlights } from '@/lib/store';
 import { C } from '@/lib/theme';
 
@@ -15,12 +17,17 @@ export default function AirportBoard() {
   const [rows, setRows] = useState<BoardRow[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [live, setLive] = useState(false);
   const known = getFlights().flatMap((f) => [f.departure.airport, f.arrival.airport]).find((a) => a.iata === code);
   const tz = known?.timeZone;
 
   const fetchBoard = useCallback(
     () =>
-      airportBoard(code, dir)
+      getApiKey()
+        .then(async (key) => {
+          setLive(!key);
+          return key ? airportBoard(code, dir) : recentBoard(code, dir);
+        })
         .then((r) => {
           setErr(null);
           setRows(r);
@@ -52,6 +59,7 @@ export default function AirportBoard() {
           </Pressable>
         ))}
       </View>
+      {live && <T variant="sub" style={{ paddingHorizontal: 16, paddingBottom: 8 }}>{dir === 'Departure' ? 'Takeoffs' : 'Landings'} seen by ADS-B receivers in the last 2 hours.</T>}
       {err && <T style={{ color: C.amber, padding: 16 }}>{err}</T>}
       {rows === null ? (
         <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} />
@@ -85,7 +93,7 @@ export default function AirportBoard() {
               </View>
             );
           }}
-          ListEmptyComponent={!err ? <T variant="sub" style={{ padding: 16 }}>No flights in the next 6 hours.</T> : undefined}
+          ListEmptyComponent={!err ? <T variant="sub" style={{ padding: 16 }}>{live ? 'No flights seen in the last 2 hours.' : 'No flights in the next 6 hours.'}</T> : undefined}
         />
       )}
     </View>

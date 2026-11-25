@@ -90,39 +90,6 @@ export default function Settings() {
       <T variant="title">Settings</T>
 
       <Card style={{ gap: 10 }}>
-        <T variant="label">Flight data</T>
-        <T variant="sub">
-          Routes and live positions work out of the box. For schedules, delays, gates, airport boards and inbound-plane tracking, add a free AeroDataBox key from RapidAPI.
-        </T>
-        <T style={{ color: saved ? C.green : C.amber, fontWeight: '700' }}>{saved ? 'AeroDataBox key saved' : 'No key saved'}</T>
-        <TextInput
-          value={key}
-          onChangeText={setKey}
-          placeholder="RapidAPI key"
-          placeholderTextColor={C.dim}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={st.input}
-        />
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Button title="Save key" onPress={save} disabled={!key.trim()} style={{ flex: 1 }} />
-          {saved && (
-            <Button
-              title="Remove"
-              kind="ghost"
-              onPress={async () => {
-                await setApiKey(null);
-                setSaved(false);
-              }}
-            />
-          )}
-        </View>
-        <Button title="Get a free key" kind="ghost" onPress={() => Linking.openURL('https://rapidapi.com/aedbx-aedbx/api/aerodatabox/pricing')} />
-        {msg && <T variant="sub">{msg}</T>}
-      </Card>
-
-      <Card style={{ gap: 10 }}>
         <T variant="label">Gmail & calendar import</T>
         <T variant="sub">
           Gmail adds airline confirmations to Google Calendar. Paste your calendar&apos;s private iCal link and Contrail imports those flights every time it opens. In Google Calendar on the web: Settings → your calendar → Integrate calendar → Secret address in iCal format.
@@ -156,6 +123,39 @@ export default function Settings() {
         {calMsg && <T variant="sub">{calMsg}</T>}
       </Card>
 
+      <Card style={{ gap: 10 }}>
+        <T variant="label">Advanced: gates & delays (optional)</T>
+        <T variant="sub">
+          Everything works without this. Routes, live positions, airport takeoff/landing boards and calendar schedules are free. An AeroDataBox key only adds gates, terminals, official delays and inbound-plane tracking.
+        </T>
+        <T style={{ color: saved ? C.green : C.sub, fontWeight: '700' }}>{saved ? 'AeroDataBox key saved' : 'Not needed'}</T>
+        <TextInput
+          value={key}
+          onChangeText={setKey}
+          placeholder="RapidAPI key"
+          placeholderTextColor={C.dim}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={st.input}
+        />
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Button title="Save key" onPress={save} disabled={!key.trim()} style={{ flex: 1 }} />
+          {saved && (
+            <Button
+              title="Remove"
+              kind="ghost"
+              onPress={async () => {
+                await setApiKey(null);
+                setSaved(false);
+              }}
+            />
+          )}
+        </View>
+        <Button title="Get a free key" kind="ghost" onPress={() => Linking.openURL('https://rapidapi.com/aedbx-aedbx/api/aerodatabox/pricing')} />
+        {msg && <T variant="sub">{msg}</T>}
+      </Card>
+
       <Card style={{ gap: 14 }}>
         <View style={st.row}>
           <View style={{ flex: 1 }}>
@@ -178,7 +178,7 @@ export default function Settings() {
       </Card>
 
       <T variant="sub" style={{ textAlign: 'center' }}>
-        Contrail · Data: AeroDataBox, adsbdb.com, adsb.lol (ODbL)
+        Contrail · Data: adsbdb.com, adsb.lol (ODbL), OpenSky Network, OurAirports, AeroDataBox
       </T>
     </ScrollView>
   );

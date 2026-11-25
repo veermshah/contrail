@@ -79,7 +79,7 @@ export default function AddFlight() {
       <Button title={loading ? 'Searching…' : 'Find flight'} onPress={search} disabled={loading} />
       {!hasKey && (
         <T variant="sub">
-          No AeroDataBox key yet, so only the route and live position will load. Add a key in Settings for times, gates and delays.
+          Route and live position load for free. Flights imported from your calendar also get their scheduled times.
         </T>
       )}
       {loading && <ActivityIndicator color={C.accent} />}

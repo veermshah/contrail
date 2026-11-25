@@ -6,7 +6,7 @@ import { getFlights } from './store';
 const URL_KEY = 'contrail:calendar-url';
 const SEEN_KEY = 'contrail:calendar-seen';
 
-export type CalendarFlight = { uid: string; number: string; dateLocal: string; summary: string; startMs?: number };
+export type CalendarFlight = { uid: string; number: string; dateLocal: string; summary: string; startMs?: number; endMs?: number };
 
 export const getCalendarUrl = () => AsyncStorage.getItem(URL_KEY);
 export async function setCalendarUrl(url: string | null) {
@@ -60,7 +60,8 @@ export function parseFlights(ics: string): CalendarFlight[] {
     const number = findFlightNumber(`${summary} ${unescape(field('DESCRIPTION'))}`);
     const dateLocal = dateOf(field('DTSTART'));
     const startMs = startOf(field('DTSTART'));
-    if (number && dateLocal) out.push({ uid: field('UID') || `${number}-${dateLocal}`, number, dateLocal, summary, startMs });
+    const endMs = startOf(field('DTEND'));
+    if (number && dateLocal) out.push({ uid: field('UID') || `${number}-${dateLocal}`, number, dateLocal, summary, startMs, endMs });
   }
   return out;
 }
@@ -98,6 +99,15 @@ async function findLeg(cf: CalendarFlight): Promise<FlightCandidate | null> {
       .map((r) => ({ r, diff: Math.abs(Date.parse(r.departure.scheduledUtc!) - cf.startMs!) }))
       .sort((a, b) => a.diff - b.diff)[0];
     if (best.diff <= 3 * 3600e3) return best.r;
+  }
+  if (fallback && !fallback.departure.scheduledUtc && cf.startMs) {
+    const iso = (ms?: number) => (ms ? new Date(ms).toISOString() : undefined);
+    return {
+      ...fallback,
+      departure: { ...fallback.departure, scheduledUtc: iso(cf.startMs) },
+      arrival: { ...fallback.arrival, scheduledUtc: iso(cf.endMs) },
+      status: 'Expected',
+    };
   }
   return fallback;
 }
