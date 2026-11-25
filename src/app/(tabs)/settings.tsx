@@ -45,6 +45,7 @@ export default function Settings() {
   const exportData = () => Share.share({ message: JSON.stringify(getFlights(), null, 2) });
 
   const clear = async () => {
+    await cancelAllReminders().catch(() => {});
     await replaceAll([]);
     setMsg('All flights removed.');
   };
