@@ -31,8 +31,27 @@ const toAirport = (a: AdsbdbAirport): Airport => ({
   lon: a.longitude,
 });
 
+async function iataToIcaoCallsign(cs: string): Promise<string | null> {
+  const m = cs.match(/^([A-Z0-9]{2})(\d{1,4}[A-Z]?)$/);
+  if (!m) return null;
+  try {
+    const data = await getJson<{ response: { icao?: string }[] }>(`${BASE}/airline/${m[1]}`);
+    const icao = Array.isArray(data?.response) ? data.response.find((a) => a.icao)?.icao : undefined;
+    return icao ? `${icao}${m[2]}` : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function routeByCallsign(callsign: string): Promise<RouteInfo | null> {
   const cs = callsign.replace(/\s+/g, '').toUpperCase();
+  const route = await routeByExactCallsign(cs);
+  if (route) return route;
+  const icao = await iataToIcaoCallsign(cs);
+  return icao ? routeByExactCallsign(icao) : null;
+}
+
+async function routeByExactCallsign(cs: string): Promise<RouteInfo | null> {
   try {
     const data = await getJson<{ response: any }>(`${BASE}/callsign/${encodeURIComponent(cs)}`);
     const r = data?.response?.flightroute;
