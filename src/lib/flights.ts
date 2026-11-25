@@ -89,7 +89,7 @@ function describeChanges(prev: Flight, next: Flight): string[] {
 }
 
 export async function refreshFlight(f: Flight, { notify = true } = {}): Promise<Flight> {
-  if (f.source !== 'aerodatabox' || !(await getApiKey())) return f;
+  if (!(await getApiKey())) return f;
   const results = await flightsByNumber(f.number, f.dateLocal);
   const match =
     results.find((r) => r.departure.airport.iata === f.departure.airport.iata && r.arrival.airport.iata === f.arrival.airport.iata) ??
@@ -106,7 +106,7 @@ export async function refreshFlight(f: Flight, { notify = true } = {}): Promise<
 }
 
 export async function refreshActive() {
-  const active = getFlights().filter((f) => !isPast(f) && f.source === 'aerodatabox');
+  const active = getFlights().filter((f) => !isPast(f));
   for (const f of active) await refreshFlight(f).catch(() => {});
 }
 
