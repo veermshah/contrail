@@ -25,7 +25,7 @@ export async function recentBoard(code: string, direction: 'Departure' | 'Arriva
   const kind = direction === 'Departure' ? 'departure' : 'arrival';
   const data = await getJson<OsFlight[]>(
     `https://opensky-network.org/api/flights/${kind}?airport=${ap.icao}&begin=${end - 7200}&end=${end}`
-  ).catch(() => [] as OsFlight[]);
+  );
   const flights = (Array.isArray(data) ? data : [])
     .filter((f) => f.callsign?.trim())
     .sort((a, b) => (direction === 'Departure' ? b.firstSeen - a.firstSeen : b.lastSeen - a.lastSeen))
