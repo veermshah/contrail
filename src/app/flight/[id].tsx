@@ -2,8 +2,12 @@ import { Link, router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
 
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { AirlineBadge, RouteLine } from '@/components/flight-card';
 import FlightMap from '@/components/flight-map';
-import { Button, Card, KV, Pill, Progress, T } from '@/components/ui';
+import { Button, Card, KV, Pill, T } from '@/components/ui';
 import { aircraftInfo, type AircraftInfo } from '@/lib/api/adsbdb';
 import { MissingKeyError } from '@/lib/api/aerodatabox';
 import { bestTime, delayMinutes, fmtDate, fmtDistance, fmtDuration, fmtTime } from '@/lib/format';
@@ -26,13 +30,13 @@ function MovementBlock({ m, label, align }: { m: Movement; label: string; align:
       <T variant="label">{label}</T>
       <Link href={{ pathname: '/airport/[code]', params: { code: m.airport.iata ?? m.airport.icao ?? '' } }} asChild>
         <Pressable>
-          <T variant="code">{m.airport.iata ?? m.airport.icao}</T>
+          <T variant="code" style={{ fontSize: 44, letterSpacing: -1.2 }}>{m.airport.iata ?? m.airport.icao}</T>
         </Pressable>
       </Link>
       <T variant="sub" numberOfLines={1}>
         {m.airport.city ?? m.airport.name}
       </T>
-      <T variant="big" style={{ marginTop: 6, color: delay >= 15 ? C.amber : delay <= -5 ? C.green : C.text }}>
+      <T variant="big" style={{ marginTop: 8, fontSize: 26, color: delay >= 15 ? C.amber : delay <= -5 ? C.green : C.text }}>
         {fmtTime(best, tz)}
       </T>
       {changed ? <T variant="sub" style={{ textDecorationLine: 'line-through' }}>{fmtTime(m.scheduledUtc, tz)}</T> : null}
@@ -48,6 +52,7 @@ export default function FlightDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const f = useFlight(id);
   const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [live, setLive] = useState<LivePosition | null>(null);
   const [inbound, setInbound] = useState<FlightCandidate | null | undefined>(undefined);
   const [inboundLive, setInboundLive] = useState<LivePosition | null>(null);
@@ -146,21 +151,27 @@ export default function FlightDetail() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Stack.Screen options={{ title: '' }} />
-      <View style={{ height: height * 0.42 }}>
+      <View style={{ height: height * 0.5 }}>
         {hasCoords && (
           <FlightMap
             routes={[{ id: f.id, from: { latitude: dep.lat!, longitude: dep.lon!, code: dep.iata }, to: { latitude: arr.lat!, longitude: arr.lon!, code: arr.iata } }]}
             planes={airborne ? [{ id: live.hex, lat: live.lat, lon: live.lon, trackDeg: live.trackDeg }] : []}
+            inset={{ top: insets.top + 56, bottom: 40 }}
           />
         )}
+        <LinearGradient pointerEvents="none" colors={[C.bg, 'transparent']} style={[st.fade, { height: insets.top + 70 }]} />
       </View>
-      <ScrollView contentContainerStyle={st.wrap}>
+      <ScrollView style={st.sheet} contentContainerStyle={st.wrap}>
+        <View style={st.grabber} />
         <View style={st.row}>
-          <View style={{ flex: 1 }}>
-            <T variant="sub" style={{ color: C.text, fontWeight: '700' }}>
-              {f.number} · {f.airline?.name ?? ''}
-            </T>
-            <T variant="title" style={{ fontSize: 24 }}>{sm.headline}</T>
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <AirlineBadge code={f.number.match(/^[A-Z0-9]{2}/)?.[0]} size={44} />
+            <View style={{ flex: 1 }}>
+              <T variant="sub" style={{ color: C.text, fontWeight: '700' }}>
+                {f.number} · {f.airline?.name ?? ''}
+              </T>
+              <T variant="title" style={{ fontSize: 26, color: sm.color === C.green ? C.text : sm.color }}>{sm.headline}</T>
+            </View>
           </View>
           <Pill label={sm.tag} color={f.source === 'route' ? C.sub : sm.color} />
         </View>
@@ -170,7 +181,7 @@ export default function FlightDetail() {
             <MovementBlock m={f.departure} label="Departs" align="left" />
             <MovementBlock m={f.arrival} label="Arrives" align="right" />
           </View>
-          <Progress value={p} color={sm.color} />
+          <RouteLine value={p} color={f.source === 'route' ? C.accent : sm.color} />
           <View style={st.row}>
             <T variant="sub">{sm.depTime ? fmtDate(sm.depTime, dep.timeZone) : f.dateLocal}</T>
             <T variant="sub">
@@ -284,7 +295,10 @@ export default function FlightDetail() {
 }
 
 const st = StyleSheet.create({
-  wrap: { padding: 16, gap: 12, paddingBottom: 60 },
+  wrap: { padding: 16, gap: 14, paddingBottom: 60 },
+  sheet: { marginTop: -28, backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  grabber: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: C.line, marginBottom: 4 },
+  fade: { position: 'absolute', top: 0, left: 0, right: 0 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   photo: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12, backgroundColor: C.cardHi },
 });

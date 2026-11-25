@@ -1,17 +1,17 @@
 export const C = {
-  bg: '#070B14',
-  card: '#111827',
-  cardHi: '#182235',
-  line: '#22304A',
-  text: '#F3F6FC',
-  sub: '#8C9AB5',
-  dim: '#55627C',
-  accent: '#6FD6FF',
-  accentDim: '#1C3A52',
-  green: '#45D483',
-  amber: '#FFB547',
-  red: '#FF6161',
-  purple: '#A68BFF',
+  bg: '#04060B',
+  card: '#0E131D',
+  cardHi: '#171E2C',
+  line: '#1E2738',
+  text: '#F5F7FB',
+  sub: '#8A94A8',
+  dim: '#4F5A6E',
+  accent: '#5CC8FF',
+  accentDim: '#12314A',
+  green: '#3FD68A',
+  amber: '#FFB23F',
+  red: '#FF5E5E',
+  purple: '#9C86FF',
 };
 
-export const R = { sm: 10, md: 16, lg: 22 };
+export const R = { sm: 12, md: 16, lg: 24, xl: 32 };
