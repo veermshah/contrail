@@ -104,8 +104,10 @@ function mergeAirport(prev: Airport, next: Airport): Airport {
 export async function refreshFlight(f: Flight, { notify = true } = {}): Promise<Flight> {
   if (!(await getApiKey())) return f;
   const results = await flightsByNumber(f.number, f.dateLocal);
+  const sameRoute = (r: FlightCandidate) => r.departure.airport.iata === f.departure.airport.iata && r.arrival.airport.iata === f.arrival.airport.iata;
   const match =
-    results.find((r) => r.departure.airport.iata === f.departure.airport.iata && r.arrival.airport.iata === f.arrival.airport.iata) ??
+    (f.departure.scheduledUtc && results.find((r) => sameRoute(r) && r.departure.scheduledUtc === f.departure.scheduledUtc)) ||
+    results.find(sameRoute) ||
     results[0];
   if (!match || !getFlight(f.id)) return f;
   const next: Flight = withDistance({
