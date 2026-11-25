@@ -18,9 +18,10 @@ export function airportByCode(code: string): Airport | undefined {
 type OsFlight = { callsign?: string; firstSeen: number; lastSeen: number; estDepartureAirport?: string; estArrivalAirport?: string };
 
 /** Keyless board from OpenSky ADS-B: actual takeoffs/landings in the last 2 hours. */
-export async function recentBoard(code: string, direction: 'Departure' | 'Arrival'): Promise<BoardRow[]> {
-  const ap = airportByCode(code);
-  if (!ap?.icao) throw new Error(`Unknown airport ${code}`);
+export async function recentBoard(code: string, direction: 'Departure' | 'Arrival', icaoHint?: string): Promise<BoardRow[]> {
+  const icao = airportByCode(code)?.icao ?? icaoHint ?? (/^[A-Z]{4}$/i.test(code) ? code.toUpperCase() : undefined);
+  if (!icao) throw new Error(`Unknown airport ${code}`);
+  const ap = { icao };
   const end = Math.floor(Date.now() / 1000);
   const kind = direction === 'Departure' ? 'departure' : 'arrival';
   const data = await getJson<OsFlight[]>(

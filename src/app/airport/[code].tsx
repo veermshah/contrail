@@ -26,7 +26,7 @@ export default function AirportBoard() {
       getApiKey()
         .then(async (key) => {
           setLive(!key);
-          return key ? airportBoard(code, dir) : recentBoard(code, dir);
+          return key ? airportBoard(code, dir) : recentBoard(code, dir, known?.icao);
         })
         .then((r) => {
           setErr(null);
@@ -36,7 +36,7 @@ export default function AirportBoard() {
           setErr(e?.message ?? 'Could not load board');
           setRows([]);
         }),
-    [code, dir]
+    [code, dir, known?.icao]
   );
 
   const load = async () => {
