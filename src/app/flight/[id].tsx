@@ -10,7 +10,7 @@ import { bestTime, delayMinutes, fmtDate, fmtDistance, fmtDuration, fmtTime } fr
 import { inboundFlight, isActive, livePosition, progress, refreshFlight, statusLabel, type FlightCandidate } from '@/lib/flights';
 import { cancelReminders } from '@/lib/notifications';
 import { getPrefs } from '@/lib/settings';
-import { removeFlight, useFlight } from '@/lib/store';
+import { getFlight, removeFlight, useFlight } from '@/lib/store';
 import { summarize } from '@/lib/summary';
 import { C } from '@/lib/theme';
 import type { LivePosition, Movement } from '@/lib/types';
@@ -65,7 +65,7 @@ export default function FlightDetail() {
       if (!f) return;
       if (manual) setRefreshing(true);
       try {
-        const next = await refreshFlight(f, { notify: !manual });
+        const next = await refreshFlight(getFlight(f.id) ?? f, { notify: !manual });
         setErr(null);
         setLive(await livePosition(next));
       } catch (e: any) {
