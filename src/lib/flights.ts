@@ -5,7 +5,7 @@ import { bestTime, delayMinutes, fmtTime } from './format';
 import { distanceKm } from './geo';
 import { notifyNow, scheduleReminders } from './notifications';
 import { getApiKey, getPrefs } from './settings';
-import { getFlights, upsertFlight } from './store';
+import { getFlight, getFlights, upsertFlight } from './store';
 import type { Flight, LivePosition } from './types';
 
 export type FlightCandidate = Omit<Flight, 'id' | 'addedAt'>;
@@ -94,7 +94,7 @@ export async function refreshFlight(f: Flight, { notify = true } = {}): Promise<
   const match =
     results.find((r) => r.departure.airport.iata === f.departure.airport.iata && r.arrival.airport.iata === f.arrival.airport.iata) ??
     results[0];
-  if (!match) return f;
+  if (!match || !getFlight(f.id)) return f;
   const next: Flight = withDistance({ ...f, ...match, callSign: match.callSign ?? f.callSign, id: f.id, addedAt: f.addedAt, notes: f.notes });
   const changes = describeChanges(f, next);
   await upsertFlight(next);
