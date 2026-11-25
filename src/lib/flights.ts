@@ -6,7 +6,7 @@ import { distanceKm } from './geo';
 import { notifyNow, scheduleReminders } from './notifications';
 import { getApiKey, getPrefs } from './settings';
 import { getFlight, getFlights, upsertFlight } from './store';
-import type { Flight, LivePosition } from './types';
+import type { Airport, Flight, LivePosition } from './types';
 
 export type FlightCandidate = Omit<Flight, 'id' | 'addedAt'>;
 
@@ -45,7 +45,11 @@ export async function searchFlights(number: string, dateLocal: string): Promise<
 
 export async function addFlight(c: FlightCandidate) {
   const dup = getFlights().find(
-    (x) => x.number === c.number && x.dateLocal === c.dateLocal && x.departure.airport.iata === c.departure.airport.iata
+    (x) =>
+      x.number === c.number &&
+      x.dateLocal === c.dateLocal &&
+      x.departure.airport.iata === c.departure.airport.iata &&
+      x.departure.scheduledUtc === c.departure.scheduledUtc
   );
   if (dup) return dup;
   const f: Flight = { ...c, id: newId(), addedAt: new Date().toISOString() };
@@ -92,6 +96,11 @@ function describeChanges(prev: Flight, next: Flight): string[] {
   return out;
 }
 
+function mergeAirport(prev: Airport, next: Airport): Airport {
+  const defined = Object.fromEntries(Object.entries(next).filter(([, v]) => v != null && v !== ''));
+  return { ...prev, ...defined } as Airport;
+}
+
 export async function refreshFlight(f: Flight, { notify = true } = {}): Promise<Flight> {
   if (!(await getApiKey())) return f;
   const results = await flightsByNumber(f.number, f.dateLocal);
@@ -99,7 +108,16 @@ export async function refreshFlight(f: Flight, { notify = true } = {}): Promise<
     results.find((r) => r.departure.airport.iata === f.departure.airport.iata && r.arrival.airport.iata === f.arrival.airport.iata) ??
     results[0];
   if (!match || !getFlight(f.id)) return f;
-  const next: Flight = withDistance({ ...f, ...match, callSign: match.callSign ?? f.callSign, id: f.id, addedAt: f.addedAt, notes: f.notes });
+  const next: Flight = withDistance({
+    ...f,
+    ...match,
+    departure: { ...match.departure, airport: mergeAirport(f.departure.airport, match.departure.airport) },
+    arrival: { ...match.arrival, airport: mergeAirport(f.arrival.airport, match.arrival.airport) },
+    callSign: match.callSign ?? f.callSign,
+    id: f.id,
+    addedAt: f.addedAt,
+    notes: f.notes,
+  });
   const changes = describeChanges(f, next);
   await upsertFlight(next);
   if (notify && changes.length && (await getPrefs()).alerts) {
