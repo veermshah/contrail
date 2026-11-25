@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 
@@ -7,9 +7,10 @@ import { C } from '@/lib/theme';
 
 import type { FlightMapProps } from './map-types';
 
-const W = 400, H = 300;
 
 export default function FlightMap({ routes, planes = [], center, style }: FlightMapProps) {
+  const [size, setSize] = useState({ w: 400, h: 300 });
+  const W = size.w, H = size.h;
   const paths = useMemo(() => routes.map((r) => ({ r, path: unwrapPath(greatCircle(r.from, r.to)) })), [routes]);
   const reg = useMemo(() => {
     if (center) return { latitude: center.latitude, longitude: center.longitude, latitudeDelta: center.radiusDeg * 2, longitudeDelta: center.radiusDeg * 2 };
@@ -25,8 +26,13 @@ export default function FlightMap({ routes, planes = [], center, style }: Flight
   for (let v = -180; v <= 180; v += step) grid.push(v);
 
   return (
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0C1424' }, style]}>
-      <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice">
+    <View
+      style={[StyleSheet.absoluteFill, { backgroundColor: '#0C1424' }, style]}
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        if (width > 0 && height > 0) setSize({ w: width, h: height });
+      }}>
+      <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
         {grid.map((g) => (
           <Line key={`x${g}`} x1={x(g)} x2={x(g)} y1={0} y2={H} stroke={C.line} strokeWidth={0.5} />
         ))}
