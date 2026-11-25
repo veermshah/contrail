@@ -20,12 +20,21 @@ export default function FlightsScreen() {
   const flights = useFlights();
   const [refreshing, setRefreshing] = useState(false);
   const [showPast, setShowPast] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(t);
+  }, []);
 
   const { upcoming, past } = useMemo(() => {
-    const up = flights.filter((f) => !isPast(f)).sort((a, b) => when(a) - when(b));
-    const pa = flights.filter((f) => isPast(f)).sort((a, b) => when(b) - when(a));
+    const up = flights.filter((f) => !isPast(f, now)).sort((a, b) => when(a) - when(b));
+    const pa = flights.filter((f) => isPast(f, now)).sort((a, b) => when(b) - when(a));
     return { upcoming: up, past: pa };
-  }, [flights]);
+  }, [flights, now]);
+  const next = upcoming.find((f) => {
+    const dep = bestTime(f.departure);
+    return dep && Date.parse(dep) > now;
+  });
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -60,9 +69,9 @@ export default function FlightsScreen() {
           </Link>
         </Card>
       )}
-      {upcoming[0] && <NextUp f={upcoming[0]} />}
+      {next && <NextUp f={next} now={now} />}
       {upcoming.map((f) => (
-        <FlightCard key={f.id} flight={f} />
+        <FlightCard key={f.id} flight={f} now={now} />
       ))}
 
       {past.length > 0 && (
@@ -76,12 +85,7 @@ export default function FlightsScreen() {
   );
 }
 
-function NextUp({ f }: { f: Flight }) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(t);
-  }, []);
+function NextUp({ f, now }: { f: Flight; now: number }) {
   const dep = bestTime(f.departure);
   const mins = dep ? (Date.parse(dep) - now) / 60000 : NaN;
   if (!Number.isFinite(mins) || mins < 0 || mins > 14 * 24 * 60) return null;

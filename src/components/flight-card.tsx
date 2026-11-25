@@ -80,11 +80,13 @@ function Time({
 export function FlightCard({
   flight: f,
   compact,
+  now,
 }: {
   flight: Flight;
   compact?: boolean;
+  now?: number;
 }) {
-  const sm = summarize(f);
+  const sm = summarize(f, now);
   const p = progress(f);
   const depTz = f.departure.airport.timeZone,
     arrTz = f.arrival.airport.timeZone;
