@@ -44,6 +44,10 @@ export async function searchFlights(number: string, dateLocal: string): Promise<
 }
 
 export async function addFlight(c: FlightCandidate) {
+  const dup = getFlights().find(
+    (x) => x.number === c.number && x.dateLocal === c.dateLocal && x.departure.airport.iata === c.departure.airport.iata
+  );
+  if (dup) return dup;
   const f: Flight = { ...c, id: newId(), addedAt: new Date().toISOString() };
   await upsertFlight(f);
   if ((await getPrefs()).alerts) await scheduleReminders(f).catch(() => {});
