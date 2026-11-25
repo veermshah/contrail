@@ -52,7 +52,15 @@ export async function addFlight(c: FlightCandidate) {
       (x.departure.scheduledUtc === c.departure.scheduledUtc || !x.departure.scheduledUtc)
   );
   if (dup && !dup.departure.scheduledUtc && c.departure.scheduledUtc) {
-    const upgraded: Flight = { ...dup, ...c, id: dup.id, addedAt: dup.addedAt, notes: dup.notes ?? c.notes };
+    const upgraded: Flight = {
+      ...dup,
+      ...c,
+      departure: { ...c.departure, airport: mergeAirport(dup.departure.airport, c.departure.airport) },
+      arrival: { ...c.arrival, airport: mergeAirport(dup.arrival.airport, c.arrival.airport) },
+      id: dup.id,
+      addedAt: dup.addedAt,
+      notes: dup.notes ?? c.notes,
+    };
     await upsertFlight(upgraded);
     if ((await getPrefs()).alerts) await scheduleReminders(upgraded).catch(() => {});
     return upgraded;
